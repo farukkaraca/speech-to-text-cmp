@@ -192,13 +192,13 @@ Watch our application in action on both platforms! These demos showcase the key 
     <tr>
       <td align="center" width="50%">
         <strong>Android Demo</strong><br/>
-        <video src="demo/android-demo.mp4" width="270" height="600" controls/>
+        <video src="https://github.com/user-attachments/assets/1a309f02-7a0f-4b54-9a92-854551ff5c49" width="270" height="600" controls/>
         <br/>
         <em>Android demo showing real-time speech recognition and material design UI</em>
       </td>
       <td align="center" width="50%">
         <strong>iOS Demo</strong><br/>
-        <video src="demo/ios-demo.mp4" width="270" height="600" controls/>
+        <video src="https://github.com/user-attachments/assets/a53c2380-7726-4841-b7b1-b45877da9fd6" width="270" height="600" controls/>
         <br/>
         <em>iOS demo featuring native speech recognition and SwiftUI integration</em>
       </td>

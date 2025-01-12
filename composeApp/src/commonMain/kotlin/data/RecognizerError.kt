@@ -1,3 +1,5 @@
+package data
+
 sealed class RecognizerError(message: String) : Exception(message) {
     object NilRecognizer : RecognizerError("Can't initialize speech recognizer")
     object NotAuthorizedToRecognize : RecognizerError("Not authorized to recognize speech")

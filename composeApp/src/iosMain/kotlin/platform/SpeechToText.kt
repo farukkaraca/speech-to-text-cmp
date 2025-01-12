@@ -1,3 +1,6 @@
+package platform
+
+import data.RecognizerError
 import data.Error
 import data.ListeningStatus
 import data.PermissionRequestStatus
@@ -22,9 +25,10 @@ import platform.Speech.SFSpeechAudioBufferRecognitionRequest
 import platform.Speech.SFSpeechRecognitionTask
 import platform.Speech.SFSpeechRecognizer
 import platform.Speech.SFSpeechRecognizerAuthorizationStatus
+import platform.UIKit.UIPasteboard
 import kotlin.coroutines.resume
 
-actual class SpeechToText actual constructor() {
+actual class SpeechToText {
 
     private var _transcriptState = MutableStateFlow(
         TranscriptState(
@@ -203,5 +207,9 @@ actual class SpeechToText actual constructor() {
         val supportedLocales = SFSpeechRecognizer.supportedLocales()
         val languages = supportedLocales.map { (it as NSLocale).localeIdentifier() }
         onLanguagesResult(languages)
+    }
+
+    actual fun copyText(text: String) {
+        UIPasteboard.generalPasteboard.string = text
     }
 }

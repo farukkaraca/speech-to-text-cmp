@@ -1,5 +1,10 @@
+package platform
+
+import data.RecognizerError
 import android.Manifest
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,27 +21,12 @@ import data.PermissionRequestStatus
 import data.TranscriptState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
-import java.util.Locale
 
-actual class SpeechToText {
-
-    constructor(context: Context) {
-        this.context = context
-        this.activity = context as Activity
-        initializeSpeechRecognizer()
-
-        getSupportedLanguages { supportedLanguages ->
-            transcriptState.update {
-                it.copy(
-                    supportedLanguages = supportedLanguages,
-                )
-            }
-        }
-    }
-
-    actual constructor()
-
-    private var _transcriptState = MutableStateFlow(
+actual class SpeechToText(
+    private val context: Context,
+    private val activity: Activity
+) {
+    private val _transcriptState = MutableStateFlow(
         TranscriptState(
             listeningStatus = ListeningStatus.INACTIVE,
             error = Error(isError = false),
@@ -47,14 +37,23 @@ actual class SpeechToText {
     actual val transcriptState: MutableStateFlow<TranscriptState>
         get() = _transcriptState
 
-    private lateinit var context: Context
-    private lateinit var activity: Activity
+    init {
+        initializeSpeechRecognizer()
+        getSupportedLanguages { supportedLanguages ->
+            _transcriptState.update {
+                it.copy(
+                    supportedLanguages = supportedLanguages,
+                )
+            }
+        }
+    }
+
     private var speechRecognizer: SpeechRecognizer? = null
     private var recognitionListener: RecognitionListener? = null
 
     private fun initializeSpeechRecognizer() {
-        if (SpeechRecognizer.isRecognitionAvailable(activity)) {
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(activity)
+        if (SpeechRecognizer.isRecognitionAvailable(context)) {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
             Log.d("SpeechToText", "SpeechRecognizer initialized")
         } else {
             Log.e("SpeechToText", "SpeechRecognizer not available on this device")
@@ -63,7 +62,7 @@ actual class SpeechToText {
 
     actual fun startTranscribing() {
         if (speechRecognizer == null) {
-            transcriptState.update {
+            _transcriptState.update {
                 it.copy(
                     listeningStatus = ListeningStatus.INACTIVE,
                     error = Error(isError = true, message = RecognizerError.NilRecognizer.message)
@@ -86,7 +85,7 @@ actual class SpeechToText {
 
             recognitionListener = object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
-                    transcriptState.update {
+                    _transcriptState.update {
                         it.copy(listeningStatus = ListeningStatus.LISTENING)
                     }
                 }
@@ -104,13 +103,13 @@ actual class SpeechToText {
                 }
 
                 override fun onEndOfSpeech() {
-                    transcriptState.update {
+                    _transcriptState.update {
                         it.copy(listeningStatus = ListeningStatus.INACTIVE)
                     }
                 }
 
                 override fun onError(error: Int) {
-                    transcriptState.update {
+                    _transcriptState.update {
                         it.copy(
                             listeningStatus = ListeningStatus.INACTIVE,
                             error = Error(isError = true, message = error.toString())
@@ -121,7 +120,7 @@ actual class SpeechToText {
                 override fun onResults(results: Bundle?) {
                     val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     if (!matches.isNullOrEmpty()) {
-                        transcriptState.update {
+                        _transcriptState.update {
                             it.copy(
                                 listeningStatus = ListeningStatus.INACTIVE,
                                 error = Error(isError = false),
@@ -135,7 +134,7 @@ actual class SpeechToText {
                     val matches =
                         partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     if (!matches.isNullOrEmpty()) {
-                        transcriptState.update {
+                        _transcriptState.update {
                             it.copy(
                                 transcript = matches[0],
                                 error = Error(isError = false)
@@ -161,7 +160,7 @@ actual class SpeechToText {
 
     actual fun requestPermission(onPermissionResult: (PermissionRequestStatus) -> Unit) {
         if (ContextCompat.checkSelfPermission(
-                activity,
+                context,
                 Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -177,21 +176,75 @@ actual class SpeechToText {
     }
 
     actual fun setLanguage(languageCode: String) {
-        transcriptState.update {
+        _transcriptState.update {
             it.copy(selectedLanguage = languageCode)
         }
     }
 
     actual fun getSupportedLanguages(onLanguagesResult: (List<String>) -> Unit) {
-        val availableLocales = ArrayList<String>()
-
-        Locale.getAvailableLocales().map {
-            val langCode = it.language.toString()
-            if (!availableLocales.contains(langCode)) {
-                availableLocales.add(langCode)
+        val supportedLanguages = listOf(
+            "en-US", // English (United States)
+            "en-GB", // English (United Kingdom)
+            "en-AU", // English (Australia)
+            "en-CA", // English (Canada)
+            "es-ES", // Spanish (Spain)
+            "es-MX", // Spanish (Mexico)
+            "es-AR", // Spanish (Argentina)
+            "fr-FR", // French (France)
+            "fr-CA", // French (Canada)
+            "de-DE", // German
+            "it-IT", // Italian
+            "pt-PT", // Portuguese (Portugal)
+            "pt-BR", // Portuguese (Brazil)
+            "ru-RU", // Russian
+            "zh-CN", // Chinese (Simplified)
+            "zh-TW", // Chinese (Traditional)
+            "ja-JP", // Japanese
+            "ko-KR", // Korean
+            "ar-SA", // Arabic (Saudi Arabia)
+            "ar-AE", // Arabic (UAE)
+            "tr-TR", // Turkish
+            "hi-IN", // Hindi
+            "th-TH", // Thai
+            "vi-VN", // Vietnamese
+            "id-ID", // Indonesian
+            "ms-MY", // Malay
+            "fil-PH", // Filipino
+            "nl-NL", // Dutch
+            "pl-PL", // Polish
+            "ro-RO", // Romanian
+            "hu-HU", // Hungarian
+            "cs-CZ", // Czech
+            "el-GR", // Greek
+            "sv-SE", // Swedish
+            "da-DK", // Danish
+            "no-NO", // Norwegian
+            "fi-FI", // Finnish
+            "he-IL", // Hebrew
+            "bn-IN", // Bengali
+            "ta-IN"  // Tamil
+        ).filter { locale ->
+            try {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale)
+                    putExtra(
+                        RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                        RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                    )
+                }
+                intent.resolveActivity(context.packageManager) != null &&
+                        SpeechRecognizer.isRecognitionAvailable(context)
+            } catch (e: Exception) {
+                false
             }
         }
 
-        onLanguagesResult(availableLocales)
+        onLanguagesResult(supportedLanguages)
+    }
+
+    actual fun copyText(text: String) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("Speech Text", text)
+        clipboard.setPrimaryClip(clip)
     }
 }

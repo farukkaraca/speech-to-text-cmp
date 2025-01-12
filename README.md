@@ -102,7 +102,7 @@ The project follows Clean Architecture principles with MVVM pattern:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/[username]/speech-to-text-cmp.git
+git clone https://github.com/farukkaraca/speech-to-text-cmp.git
 cd speech-to-text-cmp
 ```
 
@@ -191,13 +191,13 @@ Watch our application in action on both platforms! These demos showcase the key 
   <table>
     <tr>
       <td align="center" width="50%">
-        <strong>Android Demo</strong><br/>
+        <strong>Ios Demo</strong><br/>
         <video src="https://github.com/user-attachments/assets/1a309f02-7a0f-4b54-9a92-854551ff5c49" width="270" height="600" controls/>
         <br/>
         <em>Android demo showing real-time speech recognition and material design UI</em>
       </td>
       <td align="center" width="50%">
-        <strong>iOS Demo</strong><br/>
+        <strong>Android Demo</strong><br/>
         <video src="https://github.com/user-attachments/assets/a53c2380-7726-4841-b7b1-b45877da9fd6" width="270" height="600" controls/>
         <br/>
         <em>iOS demo featuring native speech recognition and SwiftUI integration</em>

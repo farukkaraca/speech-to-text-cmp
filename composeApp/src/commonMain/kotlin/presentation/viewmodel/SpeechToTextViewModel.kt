@@ -35,8 +35,8 @@ class SpeechToTextViewModel(
                     _uiEvent.value = UiEvent.ShowSnackbar("Permission denied")
                 }
 
-                else -> {
-                    _uiEvent.value = UiEvent.ShowSnackbar("Permission permanently denied")
+                PermissionRequestStatus.NEVER_ASK_AGAIN -> {
+                    speechToText.showNeedPermission()
                 }
             }
         }
@@ -63,6 +63,14 @@ class SpeechToTextViewModel(
 
     fun onUiEventHandled() {
         _uiEvent.value = null
+    }
+
+    fun onDismissRequest() {
+        speechToText.dismissPermissionDialog()
+    }
+
+    fun openAppSettings() {
+        speechToText.openAppSettings()
     }
 
     sealed class UiEvent {

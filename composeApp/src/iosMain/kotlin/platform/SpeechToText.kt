@@ -1,9 +1,9 @@
 package platform
 
-import data.RecognizerError
 import data.Error
 import data.ListeningStatus
 import data.PermissionRequestStatus
+import data.RecognizerError
 import data.TranscriptState
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
@@ -17,14 +17,18 @@ import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionCategoryOptions
 import platform.AVFAudio.AVAudioSessionCategoryPlayAndRecord
 import platform.AVFAudio.AVAudioSessionModeMeasurement
+import platform.AVFAudio.AVAudioSessionRecordPermissionDenied
 import platform.AVFAudio.AVAudioSessionSetActiveOptions
 import platform.AVFAudio.setActive
 import platform.Foundation.NSLocale
+import platform.Foundation.NSURL
 import platform.Foundation.localeIdentifier
 import platform.Speech.SFSpeechAudioBufferRecognitionRequest
 import platform.Speech.SFSpeechRecognitionTask
 import platform.Speech.SFSpeechRecognizer
 import platform.Speech.SFSpeechRecognizerAuthorizationStatus
+import platform.UIKit.UIApplication
+import platform.UIKit.UIApplicationOpenSettingsURLString
 import platform.UIKit.UIPasteboard
 import kotlin.coroutines.resume
 
@@ -115,19 +119,24 @@ actual class SpeechToText {
 
     actual fun requestPermission(onPermissionResult: (PermissionRequestStatus) -> Unit) {
         customScope.launch {
-            if (!hasAuthorizationToRecognize() || !hasPermissionToRecord()) {
-                transcriptState.update {
-                    it.copy(
-                        listeningStatus = ListeningStatus.INACTIVE,
-                        error = Error(
-                            isError = true,
-                            message = RecognizerError.NotAuthorizedToRecognize.message
-                        )
-                    )
+            val hasRecordPermission = hasPermissionToRecord()
+            val hasSpeechPermission = hasAuthorizationToRecognize()
+            
+            when {
+                hasRecordPermission && hasSpeechPermission -> {
+                    onPermissionResult(PermissionRequestStatus.ALLOWED)
                 }
-                onPermissionResult(PermissionRequestStatus.NOT_ALLOWED)
-            } else {
-                onPermissionResult(PermissionRequestStatus.ALLOWED)
+                !hasRecordPermission || !hasSpeechPermission -> {
+                    val recordAuthStatus = AVAudioSession.sharedInstance().recordPermission
+                    val speechAuthStatus = SFSpeechRecognizer.authorizationStatus()
+                    
+                    if (recordAuthStatus == AVAudioSessionRecordPermissionDenied ||
+                        speechAuthStatus == SFSpeechRecognizerAuthorizationStatus.SFSpeechRecognizerAuthorizationStatusDenied) {
+                        onPermissionResult(PermissionRequestStatus.NEVER_ASK_AGAIN)
+                    } else {
+                        onPermissionResult(PermissionRequestStatus.NOT_ALLOWED)
+                    }
+                }
             }
         }
     }
@@ -211,5 +220,68 @@ actual class SpeechToText {
 
     actual fun copyText(text: String) {
         UIPasteboard.generalPasteboard.string = text
+    }
+
+    actual fun showNeedPermission() {
+        transcriptState.update {
+            it.copy(
+                showPermissionNeedDialog = true,
+            )
+        }
+    }
+
+    actual fun dismissPermissionDialog() {
+        transcriptState.update {
+            it.copy(
+                showPermissionNeedDialog = false,
+            )
+        }
+    }
+
+    actual fun openAppSettings() {
+        val recordAuthStatus = AVAudioSession.sharedInstance().recordPermission
+        val speechAuthStatus = SFSpeechRecognizer.authorizationStatus()
+        
+        when {
+            recordAuthStatus == AVAudioSessionRecordPermissionDenied -> {
+                val micSettingsUrl = NSURL.URLWithString("prefs:root=Privacy&path=MICROPHONE")
+                if (micSettingsUrl != null && UIApplication.sharedApplication.canOpenURL(micSettingsUrl)) {
+                    UIApplication.sharedApplication.openURL(
+                        micSettingsUrl,
+                        mapOf<Any?, Any>(),
+                        null
+                    )
+                } else {
+                    openGeneralSettings()
+                }
+            }
+            speechAuthStatus == SFSpeechRecognizerAuthorizationStatus.SFSpeechRecognizerAuthorizationStatusDenied -> {
+                val speechSettingsUrl = NSURL.URLWithString("prefs:root=Privacy&path=SPEECH_RECOGNITION")
+                if (speechSettingsUrl != null && UIApplication.sharedApplication.canOpenURL(speechSettingsUrl)) {
+                    UIApplication.sharedApplication.openURL(
+                        speechSettingsUrl,
+                        mapOf<Any?, Any>(),
+                        null
+                    )
+                } else {
+                    openGeneralSettings()
+                }
+            }
+            else -> {
+                openGeneralSettings()
+            }
+        }
+        dismissPermissionDialog()
+    }
+
+    private fun openGeneralSettings() {
+        val generalSettingsUrl = NSURL.URLWithString(UIApplicationOpenSettingsURLString)
+        if (generalSettingsUrl != null) {
+            UIApplication.sharedApplication.openURL(
+                generalSettingsUrl,
+                mapOf<Any?, Any>(),
+                null
+            )
+        }
     }
 }

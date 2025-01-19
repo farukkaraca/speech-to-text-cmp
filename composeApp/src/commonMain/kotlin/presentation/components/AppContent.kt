@@ -1,5 +1,6 @@
 package presentation.components
 
+import PermissionDialogEvents
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -18,6 +19,7 @@ fun AppContent(
     onLanguageSelected: (String) -> Unit,
     onClickMic: () -> Unit,
     onClickCopy: () -> Unit,
+    permissionDialogEvents: PermissionDialogEvents
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
 
@@ -39,6 +41,13 @@ fun AppContent(
                 showLanguageDialog = false
             },
             selectedLanguage = selectedLanguage
+        )
+    }
+
+    if (transcriptState.showPermissionNeedDialog) {
+        PermissionNeedDialog(
+            onDismissRequest = {permissionDialogEvents.onDismissRequest()},
+            onClickGoToSettings = {permissionDialogEvents.onClickGoToSettings()}
         )
     }
 

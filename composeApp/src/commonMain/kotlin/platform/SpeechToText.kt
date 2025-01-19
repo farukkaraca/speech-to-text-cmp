@@ -12,4 +12,7 @@ expect class SpeechToText {
     fun getSupportedLanguages(onLanguagesResult: (List<String>) -> Unit)
     fun setLanguage(languageCode: String)
     fun copyText(text: String)
+    fun showNeedPermission()
+    fun dismissPermissionDialog()
+    fun openAppSettings()
 }

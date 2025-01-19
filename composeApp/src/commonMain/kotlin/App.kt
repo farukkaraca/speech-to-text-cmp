@@ -48,6 +48,21 @@ fun App(
             onLanguageSelected = viewModel::onLanguageSelected,
             onClickMic = viewModel::onClickMic,
             onClickCopy = viewModel::onClickCopy,
+
+            permissionDialogEvents = object : PermissionDialogEvents {
+                override fun onDismissRequest() {
+                    viewModel.onDismissRequest()
+                }
+
+                override fun onClickGoToSettings() {
+                    viewModel.openAppSettings()
+                }
+            }
         )
     }
+}
+
+interface PermissionDialogEvents {
+    fun onDismissRequest()
+    fun onClickGoToSettings()
 }

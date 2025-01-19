@@ -5,7 +5,8 @@ data class TranscriptState(
     val error: Error = Error(),
     val transcript: String? = null,
     val selectedLanguage: String = DEFAULT_LANGUAGE,
-    val supportedLanguages: List<String> = listOf()
+    val supportedLanguages: List<String> = listOf(),
+    val showPermissionNeedDialog: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_LANGUAGE = "en-US"
